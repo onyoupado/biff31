@@ -461,6 +461,14 @@ a.mapl:hover{color:var(--accent)}
     <label class="tg"><input type="checkbox" id="set-hidecancel"> 예매 실패·취소 회차는 겹침 계산에서 제외</label>
     <span style="margin-left:auto;display:flex;gap:6px"><button class="btn" type="button" id="copy-mine">텍스트로 복사</button><button class="btn" type="button" id="ics-mine" data-mode-only="owner" hidden>캘린더 파일 내려받기</button></span>
   </div>
+  <details class="note bkbox" id="mbackup" style="margin-bottom:10px">
+    <summary><b>내 목록 백업하기</b> <span class="small" style="font-weight:400">— 폰을 바꾸거나 목록이 사라졌을 때를 대비해요</span></summary>
+    <p class="small" style="margin:8px 0 0">담은 목록은 이 브라우저에만 있어요. 아래 코드를 복사해서 메모장이나 나에게 보내는 메시지에 붙여 두면, 목록이 사라져도 그대로 되살릴 수 있어요.</p>
+    <div class="row" style="margin-top:8px"><button type="button" class="btn primary" id="mbk-copy">백업 코드 복사</button><span class="small">복사한 코드를 어딘가에 붙여 두세요.</span></div>
+    <label for="mbk-text" class="small" style="display:block;margin-top:12px">되살릴 때는 백업 코드를 여기에 붙여넣고 불러오기를 누르세요. 지금 목록은 백업 내용으로 바뀌어요.</label>
+    <textarea id="mbk-text" rows="2" style="width:100%;margin-top:4px;font:12px 'IBM Plex Mono',monospace"></textarea>
+    <div class="row" style="margin-top:6px"><button type="button" class="btn" id="mbk-load">불러오기</button><span id="mbk-msg" style="font-size:13px"></span></div>
+  </details>
   <div class="note" style="margin-bottom:0">
     <h3>내 시간표를 코드로 보내기 <span class="small" style="font-weight:400">(같이 볼 사람이 있을 때)</span></h3>
     <div class="row" style="margin-top:6px">
@@ -1469,10 +1477,11 @@ document.addEventListener('click', e=>{
   else if (t.id==='tk-skip'){ const x=tkTarget(); if(x){ tkSkip.add(x.id); renderBook(); const y=tkTarget(); if(y&&y.c) copyText(y.c, `다음 코드 ${y.c} 복사했어요.`); } }
   else if (t.dataset.tk){ const x=tkTarget(); if(x){ S.sel[x.id].st=t.dataset.tk; save(); renderAll(); const y=tkTarget(); if(y&&y.c) copyText(y.c, `다음 코드 ${y.c} 복사했어요.`); else toast('예매 전인 회차를 모두 정리했어요.'); } }
   else if (t.id==='copy-codes'){ const txt=codesText(); txt?copyText(txt,'예매 전 상영코드를 복사했어요.'):toast('예매 전 상태인 회차가 없어요.'); }
-  else if (t.id==='bk-copy') copyText(makeCode(), '백업 코드를 복사했어요.');
-  else if (t.id==='bk-load'){
-    const msg=$('bk-msg');
-    try { const p=parseCode($('bk-text').value); S.sel=p.sel; if(p.name) S.name=p.name; if(p.set) S.set=Object.assign({}, S.set, {gv:Number(p.set.gv)||0, buf:p.set.buf!=null?Number(p.set.buf):S.set.buf, hidecancel:!!p.set.hidecancel}); save(); renderAll(); $('bk-text').value=''; msg.style.color='var(--ok)'; msg.textContent=`${Object.keys(p.sel).length}개 회차를 불러왔어요.`+(p.skipped?` (${p.skipped}개는 시간표에 없어 제외)`:''); }
+  else if (t.id==='bk-copy'||t.id==='mbk-copy'){ if(!Object.keys(S.sel).length){ toast('아직 담은 회차가 없어요.'); return; } copyText(makeCode(), '백업 코드를 복사했어요.'); }
+  else if (t.id==='bk-load'||t.id==='mbk-load'){
+    const pre = t.id==='mbk-load' ? 'mbk' : 'bk';
+    const msg=$(pre+'-msg');
+    try { const p=parseCode($(pre+'-text').value); S.sel=p.sel; if(p.name) S.name=p.name; if(p.set) S.set=Object.assign({}, S.set, {gv:Number(p.set.gv)||0, buf:p.set.buf!=null?Number(p.set.buf):S.set.buf, hidecancel:!!p.set.hidecancel}); save(); renderAll(); $(pre+'-text').value=''; msg.style.color='var(--ok)'; msg.textContent=`${Object.keys(p.sel).length}개 회차를 불러왔어요.`+(p.skipped?` (${p.skipped}개는 시간표에 없어 제외)`:''); }
     catch(err){ msg.style.color='var(--bad)'; msg.textContent='백업 코드를 읽을 수 없어요. ‘BIFF31:’로 시작하는 코드 전체를 붙여넣었는지 확인하세요.'; }
   }
 });
