@@ -102,6 +102,16 @@ a.ti::after{content:" ↗";font-size:11px;color:var(--muted);font-weight:500}
 .b.clash{background:var(--bad-soft);color:var(--bad)}
 .b.tight{background:var(--warn-soft);color:var(--warn)}
 .b.ok{background:var(--ok-soft);color:var(--ok)}
+.b.acct{background:var(--accent);color:var(--on-accent)}
+.b.with{background:var(--pk-soft);color:var(--pk);font-family:"IBM Plex Sans KR",sans-serif}
+.bk-table td.acw select{display:block;width:100%;font-size:13px;padding:5px 8px;margin-bottom:4px}
+.bk-table td.acw input{display:block;width:100%;font-size:13px;padding:5px 8px}
+.bk-table td.acw .xrow{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:4px}
+.bk-table td.acw .xrow select,.bk-table td.acw .xrow input{margin:0;width:100%;min-width:0}
+.bk-table td.acw input:disabled{opacity:.45}
+.b.xfer.out{background:var(--warn-soft);color:var(--warn)}
+.b.xfer.in{background:var(--ok-soft);color:var(--ok)}
+.bk-table td.acw{min-width:190px}
 .tier{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;border-radius:6px;font:700 12px/22px "IBM Plex Mono",monospace;cursor:help}
 .tier.S{background:var(--bad);color:#fff}
 .tier.A{background:var(--warn);color:var(--ground)}
@@ -490,6 +500,7 @@ a.mapl:hover{color:var(--accent)}
     <span class="small">첫 이용이면 ticket.biff.kr에서 휴대폰 인증 회원가입을 미리 해 두세요.</span>
   </div>
   <div class="stats" id="bstats"></div>
+  <div id="acct-sum"></div>
   <div class="note"><h3>예매 전에 확인할 공식 규정</h3>
     <ul>
       <li>상영코드별 최대 2매, 동일 계정 다중 접속·다중 탭 예매 불가(크롬 권장)</li>
@@ -645,10 +656,12 @@ a.mapl:hover{color:var(--accent)}
   </details>
   <details class="hsec"><summary>예매 당일 무기</summary>
   <ul>
+    <li data-mode-only="owner"><b>계정·동행·양도 표시</b> — ‘예매 체크’ 표에서 회차마다 예매 계정(3558 · 2635 · 2897), 같이 볼 사람, 양도/양수와 상대 이름을 적어 둘 수 있어요. 시간표 카드와 작전표에 배지로 뜨고, 위쪽에 계정별 합계가 나와요. <b>양도한 회차는 안 가는 걸로 보고 겹침 계산에서 빼요.</b> 백업 코드엔 담기고, 친구에게 보내는 코드엔 안 담겨요.</li>
     <li><b>예매 작전표</b> — ‘예매 체크’에서 켜면 예매 전 회차만 우선순위 순서로 번호 매겨 상영코드를 크게 띄워요. 예매창 옆에 두고 위에서부터 치면 돼요. 줄마다 <b>성공·실패</b>를 누르면 바로 기록되고 목록에서 빠져요.</li>
     <li><b>오늘 화면</b> — 10. 6.~15. 사이에만 ‘나만의 시간표’ 맨 위에 나타나요. 다음 상영까지 남은 시간, 입장 가능 시각(시작 15분 전~후 15분), 앞 회차에서 오는 이동시간, 늦을 것 같으면 경고까지.</li>
     <li><b>길찾기</b> — 상영관 이름 옆을 누르면 네이버지도 검색으로 넘어가요. 실제 경로는 지도 앱이 정확해요.</li>
     <li><b>자막 필터</b> — 영어자막(KE)·배리어프리 자막(KK) 회차만 골라 볼 수 있어요.</li>
+    <li data-mode-only="share"><b>계정·동행·양도 메모</b> — ‘예매 체크’ 표 회차마다 예매 계정, 같이 볼 사람, 양도/양수 여부와 상대 이름을 적어 둘 수 있어요. 시간표 카드에 배지로 붙고, 양도한 회차는 안 가는 걸로 보고 겹침 계산에서 빠져요. 이 메모는 이 브라우저와 백업 코드에만 남고 친구에게 보내는 코드엔 안 들어가요.</li>
   </ul>
 
   </details>
@@ -828,7 +841,7 @@ const runtime = x => (x.dur ?? ASSUME) + (x.gv ? Number(S.set.gv)||0 : 0);
 const absEnd = x => x.t ? absStart(x) + runtime(x) : null;
 function fmt(abs, baseDay){ const d=Math.floor(abs/1440), m=((abs%1440)+1440)%1440; const s=String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'); return d>baseDay ? s+'(+1)' : s; }
 const isSel = id => !!S.sel[id];
-const offSel = id => S.set.hidecancel && S.sel[id] && ['fail','cancel'].includes(S.sel[id].st);
+const offSel = id => S.sel[id] && ((S.set.hidecancel && ['fail','cancel'].includes(S.sel[id].st)) || S.sel[id].xfer==='out');
 function km(a,b){ const R=6371, toR=Math.PI/180; const dLat=(b.lat-a.lat)*toR, dLon=(b.lon-a.lon)*toR; const h=Math.sin(dLat/2)**2+Math.cos(a.lat*toR)*Math.cos(b.lat*toR)*Math.sin(dLon/2)**2; return 2*R*Math.asin(Math.sqrt(h)); }
 function travel(a,b){
   if (a.v===b.v) return {m:0, mode:'same', txt:'같은 상영관'};
@@ -896,13 +909,24 @@ const fOk = st => st==='done' || (!S.set.fdone && st==='todo');
 function friendItems(f){ return Object.entries(f.sel||{}).filter(([id,v])=>BYID[id] && v && fOk(v.st)).map(([id,v])=>({x:BYID[id], st:v.st})); }
 function whoPicked(id){ return visFriends().filter(f=>f.sel && f.sel[id] && fOk(f.sel[id].st)); }
 function friendBadges(id){ return whoPicked(id).map(f=>`<span class="b fr ${f.sel[id].st==='done'?'done':''}" style="--fc:${fcol(f)}" title="${esc(f.name)} · ${FSTATUS[f.sel[id].st]}">${esc(f.name)}${f.sel[id].st==='done'?' ✓':''}</span>`).join(''); }
-function makeCode(){ return 'BIFF31:' + btoa(unescape(encodeURIComponent(JSON.stringify({v:2, name:(S.name||'').slice(0,20), sel:S.sel, set:{gv:S.set.gv, buf:S.set.buf, hidecancel:S.set.hidecancel}, at:Date.now()})))); }
-function parseCode(raw){
+/* 예매 계정·동행 (람이 전용) */
+const ACCTS = ['3558','2635','2897'];
+const OWNER = MODE==='owner';
+function acctOf(id){ const v=String((S.sel[id]&&S.sel[id].acct)||'').trim(); return OWNER ? (ACCTS.includes(v)?v:'') : v.slice(0,12); }
+function withOf(id){ return String((S.sel[id]&&S.sel[id].with)||'').trim().slice(0,20); }
+const XFER = {out:'양도', in:'양수'};
+function xferOf(id){ const v=S.sel[id]&&S.sel[id].xfer; return XFER[v]?v:''; }
+function xnameOf(id){ return String((S.sel[id]&&S.sel[id].xname)||'').trim().slice(0,20); }
+function xferLabel(id){ const x=xferOf(id); if(!x) return ''; const nm=xnameOf(id); return x==='out' ? `양도${nm?' → '+nm:''}` : `양수${nm?' ← '+nm:''}`; }
+function acctBadges(id){ const a=acctOf(id), w=withOf(id), x=xferOf(id); return (a?`<span class="b acct">계정 ${esc(a)}</span>`:'')+(w?`<span class="b with">👥 ${esc(w)}</span>`:'')+(x?`<span class="b xfer ${x}">${esc(xferLabel(id))}</span>`:''); }
+function stripSel(sel){ const o={}; Object.entries(sel||{}).forEach(([id,v])=>{ o[id]={st:v.st, n:v.n}; }); return o; }
+function makeCode(full){ return 'BIFF31:' + btoa(unescape(encodeURIComponent(JSON.stringify({v:2, name:(S.name||'').slice(0,20), sel: full?S.sel:stripSel(S.sel), set:{gv:S.set.gv, buf:S.set.buf, hidecancel:S.set.hidecancel}, at:Date.now()})))); }
+function parseCode(raw, full){
   raw=(raw||'').trim().replace(/\s+/g,'');
   if(!raw.startsWith('BIFF31:')) throw new Error('format');
   const obj=JSON.parse(decodeURIComponent(escape(atob(raw.slice(7)))));
   const sel={}; let skipped=0;
-  Object.entries(obj.sel||{}).forEach(([id,v])=>{ if(BYID[id] && v && ['todo','done','fail','cancel'].includes(v.st)) sel[id]={st:v.st, n:v.n==2?2:1}; else skipped++; });
+  Object.entries(obj.sel||{}).forEach(([id,v])=>{ if(BYID[id] && v && ['todo','done','fail','cancel'].includes(v.st)){ sel[id]={st:v.st, n:v.n==2?2:1}; if(full){ if(typeof v.adj==='number') sel[id].adj=Math.max(-3,Math.min(3,v.adj|0)); const ac=String(v.acct||'').trim(); if(ac && (OWNER?ACCTS.includes(ac):true)) sel[id].acct=ac.slice(0,12); if(typeof v.with==='string'&&v.with.trim()) sel[id].with=v.with.trim().slice(0,20); if(XFER[v.xfer]) sel[id].xfer=v.xfer; if(typeof v.xname==='string'&&v.xname.trim()) sel[id].xname=v.xname.trim().slice(0,20); } } else skipped++; });
   return {name: typeof obj.name==='string' ? obj.name.trim().slice(0,20) : '', sel, skipped, at:Number(obj.at)||null, set:obj.set||null};
 }
 let frUI = {open:null, name:'', code:'', msg:'', msgOk:true, pendingDel:-1};
@@ -1140,7 +1164,7 @@ function renderMine(){
       if(sv===2 && others(x).some(y=>y.t&&conflictWithMine(y)===0)) al.push(`<div class="al info">겹치지 않는 다른 회차가 있어요. 아래 ‘다른 회차’를 펼쳐 보세요.</div>`);
       if(off) al.push(`<div class="al info">예매 ${st==='fail'?'실패·매진':'취소'}로 표시되어 겹침 계산에서 제외했어요.</div>`);
       const stLabel={todo:'예매 전',done:'예매 완료',fail:'실패·매진',cancel:'취소'}[st];
-      return `<div class="mi ${sv===2?'clash':sv===1?'tight':''}" id="m-${x.id}"><div class="tm">${x.t||'미정'}${x.t?`<span class="e">~${fmt(absEnd(x),x.d)}</span><span class="e">${runtime(x)}분</span>`:''}</div>${titleHtml(x)}<button type="button" class="x" data-id="${x.id}" aria-label="${esc(x.ti)} 빼기">빼기</button><div class="sub"><span class="code" style="grid-column:auto">${esc(x.c||'—')}</span><span class="v">${esc(x.v)} ${mapLink(x)}</span><span>${esc(x.sec)}</span><span>${stLabel}</span></div><div class="badges">${x.rnd!=='free'?tierBadge(x):''}${badgesOf(x)}${friendBadges(x.id)}</div>${infoHtml(x)}${al.length?`<div class="alerts">${al.join('')}</div>`:''}${othersHtml(x)}</div>`;
+      return `<div class="mi ${sv===2?'clash':sv===1?'tight':''}" id="m-${x.id}"><div class="tm">${x.t||'미정'}${x.t?`<span class="e">~${fmt(absEnd(x),x.d)}</span><span class="e">${runtime(x)}분</span>`:''}</div>${titleHtml(x)}<button type="button" class="x" data-id="${x.id}" aria-label="${esc(x.ti)} 빼기">빼기</button><div class="sub"><span class="code" style="grid-column:auto">${esc(x.c||'—')}</span><span class="v">${esc(x.v)} ${mapLink(x)}</span><span>${esc(x.sec)}</span><span>${stLabel}</span></div><div class="badges">${x.rnd!=='free'?tierBadge(x):''}${acctBadges(x.id)}${badgesOf(x)}${friendBadges(x.id)}</div>${infoHtml(x)}${al.length?`<div class="alerts">${al.join('')}</div>`:''}${othersHtml(x)}</div>`;
     }).join('');
     const foMap={}; vf.forEach(f=>friendItems(f).forEach(o=>{ if(o.x.d===d && !S.sel[o.x.id]) (foMap[o.x.id] ??= []).push(f); }));
     const fo=Object.keys(foMap).map(id=>BYID[id]).sort((a,b)=>(a.t?hm(a.t):9999)-(b.t?hm(b.t):9999));
@@ -1349,7 +1373,7 @@ function planHtml(){
     const R=ROUND[k];
     return `<div class="plan-r"><h3>${R.name}<span>${R.when} · ${items.length}회차</span></h3><ol>${items.map((x,i)=>{
       const pp=prio(x), n=S.sel[x.id].n;
-      return `<li><span class="no">${i+1}</span><span class="bigcode">${esc(x.c||'—')}</span><span class="tier ${pp.tier}">${pp.tier}</span><div class="ti"><b>${esc(x.ti)}</b><span>10. ${x.d}.(${x.wd}) ${x.t||'시간 미정'} · ${esc(x.v)} · ${n}매${x.price!=null?` · ${(x.price*n).toLocaleString('ko-KR')}원`:''}</span></div><div class="seg" role="group" aria-label="${esc(x.ti)} 결과"><button type="button" data-st="${x.id}" data-s="done">성공</button><button type="button" data-st="${x.id}" data-s="fail">실패</button></div></li>`;
+      return `<li><span class="no">${i+1}</span><span class="bigcode">${esc(x.c||'—')}</span><span class="tier ${pp.tier}">${pp.tier}</span><div class="ti"><b>${esc(x.ti)}</b><span>10. ${x.d}.(${x.wd}) ${x.t||'시간 미정'} · ${esc(x.v)} · ${n}매${x.price!=null?` · ${(x.price*n).toLocaleString('ko-KR')}원`:''}${acctOf(x.id)?` · <b>계정 ${esc(acctOf(x.id))}</b>`:''}${withOf(x.id)?` · 👥 ${esc(withOf(x.id))}`:''}${xferOf(x.id)?` · ${esc(xferLabel(x.id))}`:''}</span></div><div class="seg" role="group" aria-label="${esc(x.ti)} 결과"><button type="button" data-st="${x.id}" data-s="done">성공</button><button type="button" data-st="${x.id}" data-s="fail">실패</button></div></li>`;
     }).join('')}</ol></div>`;
   }).join('');
   return out || '<div class="empty">예매 전 회차가 없어요. 오늘 할 일은 끝났어요.</div>';
@@ -1427,7 +1451,7 @@ function mineText(){
   const {res}=analyze(); let cur=0; const lines=['제31회 BIFF 나만의 시간표'];
   all.forEach(x=>{ if(x.d!==cur){cur=x.d; lines.push('', `■ 10월 ${x.d}일(${x.wd})`);}
     const r=res[x.id]; const sv=r?Math.max(0,...r.issues.map(i=>i.p.sev)):0;
-    lines.push(`${x.t?x.t+'~'+fmt(absEnd(x),x.d):'시간 미정'}  [${x.c||'-'}] ${x.ti} / ${x.v}${sv===2?' [겹침]':sv===1?' [이동 빠듯]':''}`); });
+    lines.push(`${x.t?x.t+'~'+fmt(absEnd(x),x.d):'시간 미정'}  [${x.c||'-'}] ${x.ti} / ${x.v}${acctOf(x.id)?' (계정 '+acctOf(x.id)+')':''}${withOf(x.id)?' 👥'+withOf(x.id):''}${xferOf(x.id)?' ['+xferLabel(x.id)+']':''}${sv===2?' [겹침]':sv===1?' [이동 빠듯]':''}`); });
   return lines.join('\n');
 }
 
@@ -1450,15 +1474,25 @@ function renderBook(){
     let items=all.filter(x=>x.rnd===k); if(!items.length) return '';
     if(!S.set.booksort) items=items.slice().sort((a,b)=>(prio(b).s-prio(a).s)||(a.d-b.d)||((a.t?hm(a.t):0)-(b.t?hm(b.t):0)));
     const R=ROUND[k]; let st=''; if(R.at){ const diff=R.at-now; if(diff>0){ const dd=Math.floor(diff/86400000), hh=Math.floor(diff%86400000/3600000); st=`<span class="st">오픈까지 ${dd?dd+'일 ':''}${hh}시간</span>`; } else st='<span class="st open">예매 진행 중</span>'; }
-    return `<div class="round"><div class="round-h"><h2>${R.name}</h2><span class="when">${R.when}</span>${st}<span class="st">${items.length}회차</span></div><div class="tbl-wrap"><table class="bk-table"><thead><tr><th>순위</th><th>상영코드</th><th>작품·일시·장소</th><th>가격</th><th>매수</th><th>상태</th><th>취소 기준</th></tr></thead><tbody>${items.map(x=>{
+    return `<div class="round"><div class="round-h"><h2>${R.name}</h2><span class="when">${R.when}</span>${st}<span class="st">${items.length}회차</span></div><div class="tbl-wrap"><table class="bk-table"><thead><tr><th>순위</th><th>상영코드</th><th>작품·일시·장소</th><th>가격</th><th>매수</th><th>계정 · 동행 · 양도/양수</th><th>상태</th><th>취소 기준</th></tr></thead><tbody>${items.map(x=>{
       const s=S.sel[x.id];
       const price=k==='free'?'무료':x.price==null?'<span class="small">공식 미게시</span>':`${(x.price*s.n).toLocaleString('ko-KR')}원${s.n>1?`<div class="small">${x.price.toLocaleString('ko-KR')}원×${s.n}</div>`:''}`;
       const cancel=x.t&&k!=='free'?`<div>${freeCancelDate(x)}까지 수수료 없음</div><div class="small">10. ${x.d}. ${fmt(absStart(x)-60,x.d)}까지 취소 가능</div>`:'<span class="small">—</span>';
       const f=FILMS[x.fk]||{};
       const pp=prio(x);
-      return `<tr class="${s.st}"><td class="tc">${k==='free'?'—':`<button type="button" class="tier ${pp.tier}" data-why="${x.id}" title="${esc(TIER_LABEL[pp.tier]+' (점수 '+pp.s+')\n· '+pp.why.join('\n· '))}" aria-label="우선순위 ${pp.tier}, 근거 보기">${pp.tier}</button><span class="adj"><button type="button" data-adj="${x.id}" data-v="1" aria-label="우선순위 올리기" ${pp.adj>=3?'disabled':''}>▲</button><button type="button" data-adj="${x.id}" data-v="-1" aria-label="우선순위 내리기" ${pp.adj<=-3?'disabled':''}>▼</button></span>`}</td><td class="cd">${esc(x.c||'—')}</td><td>${f.u?`<a href="${f.u}" target="_blank" rel="noopener"><b>${esc(x.ti)}</b></a>`:`<b>${esc(x.ti)}</b>`}${x.est?' '+badge('차수 추정','plain'):''} ${friendBadges(x.id)}<div class="small">10. ${x.d}.(${x.wd}) ${x.t||'시간 미정'} · ${esc(x.v)}</div>${k==='free'?'':`<div class="why">${esc(pp.why.slice(0,3).join(' · '))}</div>`}</td><td class="num">${price}</td><td>${k==='free'?'—':`<select data-n="${x.id}" aria-label="${esc(x.ti)} 매수"><option value="1" ${s.n==1?'selected':''}>1매</option><option value="2" ${s.n==2?'selected':''}>2매</option></select>`}</td><td><div class="seg" role="group" aria-label="${esc(x.ti)} 예매 상태">${[['todo','예매 전'],['done','완료'],['fail','실패·매진'],['cancel','취소']].map(([v,l])=>`<button type="button" data-st="${x.id}" data-s="${v}" aria-pressed="${s.st===v}">${l}</button>`).join('')}</div></td><td>${cancel}</td></tr>`;
+      return `<tr class="${s.st}"><td class="tc">${k==='free'?'—':`<button type="button" class="tier ${pp.tier}" data-why="${x.id}" title="${esc(TIER_LABEL[pp.tier]+' (점수 '+pp.s+')\n· '+pp.why.join('\n· '))}" aria-label="우선순위 ${pp.tier}, 근거 보기">${pp.tier}</button><span class="adj"><button type="button" data-adj="${x.id}" data-v="1" aria-label="우선순위 올리기" ${pp.adj>=3?'disabled':''}>▲</button><button type="button" data-adj="${x.id}" data-v="-1" aria-label="우선순위 내리기" ${pp.adj<=-3?'disabled':''}>▼</button></span>`}</td><td class="cd">${esc(x.c||'—')}</td><td>${f.u?`<a href="${f.u}" target="_blank" rel="noopener"><b>${esc(x.ti)}</b></a>`:`<b>${esc(x.ti)}</b>`}${x.est?' '+badge('차수 추정','plain'):''} ${friendBadges(x.id)}<div class="small">10. ${x.d}.(${x.wd}) ${x.t||'시간 미정'} · ${esc(x.v)}</div>${k==='free'?'':`<div class="why">${esc(pp.why.slice(0,3).join(' · '))}</div>`}</td><td class="num">${price}</td><td>${k==='free'?'—':`<select data-n="${x.id}" aria-label="${esc(x.ti)} 매수"><option value="1" ${s.n==1?'selected':''}>1매</option><option value="2" ${s.n==2?'selected':''}>2매</option></select>`}</td><td class="acw">${k==='free'?'':(OWNER?`<select data-acct="${x.id}" aria-label="${esc(x.ti)} 예매 계정"><option value="">계정 —</option>${ACCTS.map(a=>`<option value="${a}" ${acctOf(x.id)===a?'selected':''}>계정 ${a}</option>`).join('')}</select>`:`<input type="text" data-acct="${x.id}" value="${esc(acctOf(x.id))}" placeholder="예매 계정 (예: 뒷번호 4자리)" maxlength="12" aria-label="${esc(x.ti)} 예매 계정">`)}<input type="text" data-with="${x.id}" value="${esc(withOf(x.id))}" placeholder="같이 볼 사람" maxlength="20" aria-label="${esc(x.ti)} 같이 볼 사람">${k==='free'?'':`<div class="xrow"><select data-xfer="${x.id}" aria-label="${esc(x.ti)} 양도·양수"><option value="">양도·양수 —</option><option value="out" ${xferOf(x.id)==='out'?'selected':''}>양도 (내가 넘김)</option><option value="in" ${xferOf(x.id)==='in'?'selected':''}>양수 (내가 받음)</option></select><input type="text" data-xname="${x.id}" value="${esc(xnameOf(x.id))}" placeholder="${xferOf(x.id)==='in'?'넘겨준 사람':'받는 사람'}" maxlength="20" aria-label="${esc(x.ti)} 양도·양수자" ${xferOf(x.id)?'':'disabled'}></div>`}</td><td><div class="seg" role="group" aria-label="${esc(x.ti)} 예매 상태">${[['todo','예매 전'],['done','완료'],['fail','실패·매진'],['cancel','취소']].map(([v,l])=>`<button type="button" data-st="${x.id}" data-s="${v}" aria-pressed="${s.st===v}">${l}</button>`).join('')}</div></td><td>${cancel}</td></tr>`;
     }).join('')}</tbody></table></div></div>`;
   }).join('') + (unknownPrice?`<p class="small" style="margin-top:10px">가격이 공식 예매안내에 없는 ${unknownPrice}회차는 금액 합계에서 빠졌어요.</p>`:'') + `<div class="tipline" data-tip="1" title="누르면 다른 팁">${esc(tipLine(all.length+7))}</div>`;
+  renderAcctSummary();
+}
+function renderAcctSummary(){
+  const box=$('acct-sum'); if(!box) return;
+  const done=Object.keys(S.sel).map(id=>BYID[id]).filter(x=>x&&x.rnd!=='free'&&S.sel[x.id].st==='done');
+  if(!done.length){ box.innerHTML=''; return; }
+  const cnt={}; if(OWNER) ACCTS.forEach(a=>cnt[a]=0); let none=0, out=0, inn=0;
+  done.forEach(x=>{ const a=acctOf(x.id); if(a) cnt[a]=(cnt[a]||0)+1; else none++; const xf=xferOf(x.id); if(xf==='out') out++; else if(xf==='in') inn++; });
+  const keys=OWNER?ACCTS:Object.keys(cnt).sort();
+  box.innerHTML=`<div class="note" style="margin:0 0 10px"><b>예매 완료 ${done.length}회차 · 계정별</b> — ${keys.length?keys.map(a=>`${esc(a)} <b>${cnt[a]||0}</b>`).join(' · '):'아직 계정을 적은 회차가 없어요'}${none?` · 미지정 <b style="color:var(--warn)">${none}</b>`:''}${out||inn?`<div style="margin-top:3px">양도 <b>${out}</b> · 양수 <b>${inn}</b>${out?' <span class="small">— 양도한 회차는 겹침 계산에서 빠져요</span>':''}</div>`:''}<div class="small" style="margin-top:3px">표의 ‘계정’ 칸에 적으면 합계가 바뀌어요. 같이 볼 사람·양도/양수는 시간표 카드에 배지로 붙어요.</div></div>`;
 }
 function codesText(){
   return Object.keys(S.sel).map(id=>BYID[id]).filter(x=>x&&x.rnd!=='free'&&S.sel[x.id].st==='todo')
@@ -1467,7 +1501,7 @@ function codesText(){
 }
 
 /* ---------- 이벤트 ---------- */
-function renderAll(){ renderAllList(); renderMine(); renderBook(); const n=Object.keys(S.sel).length; $('bk-info').textContent = n?`담은 회차 ${n}개`:'담은 회차가 없어요'; }
+function renderAll(){ renderAllList(); renderMine(); renderBook(); renderAcctSummary(); const n=Object.keys(S.sel).length; $('bk-info').textContent = n?`담은 회차 ${n}개`:'담은 회차가 없어요'; }
 document.addEventListener('toggle', e=>{ const t=e.target; if(t.matches && t.matches('details.oth') && t.open) fillOthers(t); }, true);
 document.addEventListener('mouseover', e=>{ const s=e.target.closest && e.target.closest('details.oth>summary'); if(s && !s.dataset.tipFresh){ const det=s.parentElement; const x=BYID[det.dataset.oth]; if(x) s.title=others(x).map(y=>`10.${y.d}(${y.wd}) ${y.t||'시간 미정'} ${y.v}${isSel(y.id)?' ✓담김':''}`).join('\n'); } });
 document.addEventListener('click', e=>{
@@ -1515,11 +1549,11 @@ document.addEventListener('click', e=>{
   else if (t.id==='tk-skip'){ const x=tkTarget(); if(x){ tkSkip.add(x.id); renderBook(); const y=tkTarget(); if(y&&y.c) copyText(y.c, `다음 코드 ${y.c} 복사했어요.`); } }
   else if (t.dataset.tk){ const x=tkTarget(); if(x){ S.sel[x.id].st=t.dataset.tk; save(); renderAll(); const y=tkTarget(); if(y&&y.c) copyText(y.c, `다음 코드 ${y.c} 복사했어요.`); else toast('예매 전인 회차를 모두 정리했어요.'); } }
   else if (t.id==='copy-codes'){ const txt=codesText(); txt?copyText(txt,'예매 전 상영코드를 복사했어요.'):toast('예매 전 상태인 회차가 없어요.'); }
-  else if (t.id==='bk-copy'||t.id==='mbk-copy'){ if(!Object.keys(S.sel).length){ toast('아직 담은 회차가 없어요.'); return; } copyText(makeCode(), '백업 코드를 복사했어요.'); }
+  else if (t.id==='bk-copy'||t.id==='mbk-copy'){ if(!Object.keys(S.sel).length){ toast('아직 담은 회차가 없어요.'); return; } copyText(makeCode(true), '백업 코드를 복사했어요.'); }
   else if (t.id==='bk-load'||t.id==='mbk-load'){
     const pre = t.id==='mbk-load' ? 'mbk' : 'bk';
     const msg=$(pre+'-msg');
-    try { const p=parseCode($(pre+'-text').value); S.sel=p.sel; if(p.name) S.name=p.name; if(p.set) S.set=Object.assign({}, S.set, {gv:Number(p.set.gv)||0, buf:p.set.buf!=null?Number(p.set.buf):S.set.buf, hidecancel:!!p.set.hidecancel}); save(); renderAll(); $(pre+'-text').value=''; msg.style.color='var(--ok)'; msg.textContent=`${Object.keys(p.sel).length}개 회차를 불러왔어요.`+(p.skipped?` (${p.skipped}개는 시간표에 없어 제외)`:''); }
+    try { const p=parseCode($(pre+'-text').value, true); S.sel=p.sel; if(p.name) S.name=p.name; if(p.set) S.set=Object.assign({}, S.set, {gv:Number(p.set.gv)||0, buf:p.set.buf!=null?Number(p.set.buf):S.set.buf, hidecancel:!!p.set.hidecancel}); save(); renderAll(); $(pre+'-text').value=''; msg.style.color='var(--ok)'; msg.textContent=`${Object.keys(p.sel).length}개 회차를 불러왔어요.`+(p.skipped?` (${p.skipped}개는 시간표에 없어 제외)`:''); }
     catch(err){ msg.style.color='var(--bad)'; msg.textContent='백업 코드를 읽을 수 없어요. ‘BIFF31:’로 시작하는 코드 전체를 붙여넣었는지 확인하세요.'; }
   }
 });
@@ -1527,6 +1561,10 @@ document.addEventListener('click', e=>{ const el=e.target.closest('.tipline[data
 document.addEventListener('change', e=>{
   const t=e.target;
   if (t.dataset.n){ S.sel[t.dataset.n].n=Number(t.value); save(); renderBook(); }
+  else if (t.dataset.acct!==undefined){ const id=t.dataset.acct; if(!S.sel[id]) return; const v=t.value.trim().slice(0,12); if(v && (OWNER?ACCTS.includes(v):true)) S.sel[id].acct=v; else delete S.sel[id].acct; save(); renderMine(); renderAcctSummary(); }
+  else if (t.dataset.xfer!==undefined){ const id=t.dataset.xfer; if(!S.sel[id]) return; if(XFER[t.value]) S.sel[id].xfer=t.value; else { delete S.sel[id].xfer; delete S.sel[id].xname; } save(); renderAll(); }
+  else if (t.dataset.xname!==undefined){ const id=t.dataset.xname; if(!S.sel[id]) return; const v=t.value.trim().slice(0,20); if(v) S.sel[id].xname=v; else delete S.sel[id].xname; save(); renderMine(); }
+  else if (t.dataset.with!==undefined){ const id=t.dataset.with; if(!S.sel[id]) return; const v=t.value.trim().slice(0,20); if(v) S.sel[id].with=v; else delete S.sel[id].with; save(); renderMine(); }
   else if (t.id==='set-gv'){ S.set.gv=Number(t.value); save(); renderAll(); }
   else if (t.id==='set-buf'){ S.set.buf=Number(t.value); save(); renderAll(); }
   else if (t.id==='set-hidecancel'){ S.set.hidecancel=t.checked; save(); renderAll(); }
